@@ -1,0 +1,200 @@
+/* --- SHARED STYLES & BACKGROUND --- */
+.root-pane {
+    -fx-background-image: url('background.png');
+    -fx-background-size: cover;
+    -fx-background-color: #E8F0F2; /* Fallback color */
+}
+
+/* Reusable Card Style for Dashboard */
+.card {
+    -fx-background-color: rgba(255, 255, 255, 0.9);
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: #A0C4FF;
+    -fx-border-width: 1.5px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 4);
+}
+
+
+/* --- LOGIN SCREEN STYLES --- */
+
+.welcome-label {
+    -fx-font-size: 48px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* General Form Pane Styling */
+.form-pane {
+    -fx-background-color: white;
+    -fx-border-width: 1.5px;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);
+    -fx-pref-width: 320px;
+    -fx-pref-height: 400px; /* Increased height for role selector */
+}
+
+/* Specific Border Colors for Each Form */
+.login-pane {
+    -fx-border-color: #A0C4FF; /* Light Blue */
+    -fx-background-color: #F8FBFF;
+}
+
+.register-pane {
+    -fx-border-color: #BDECB6; /* Light Green */
+    -fx-background-color: #F9FFF8;
+}
+
+/* Form Titles */
+.form-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-fill: #333333; /* For Text nodes */
+    -fx-text-fill: #333333; /* For Label nodes */
+}
+
+/* Text Fields, Password Fields, and ComboBox on Login Page */
+.form-pane .text-field, .form-pane .password-field, .form-pane .combo-box {
+    -fx-pref-height: 40px;
+    -fx-font-size: 14px;
+    -fx-border-color: #DDDDDD;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-prompt-text-fill: #AAAAAA;
+}
+
+/* NEW: Style for the text field that has an icon */
+.icon-text-field {
+    -fx-padding: 0 10px 0 35px; /* Add padding on the left to make space for the icon */
+}
+
+/* NEW: Style for the icon itself */
+.text-field-icon {
+    -fx-font-size: 16px;
+    -fx-fill: #808080; /* Gray color for the icon */
+}
+
+
+.form-pane .text-field:focused, .form-pane .password-field:focused, .form-pane .combo-box:focused {
+    -fx-border-color: #4A90E2; /* Blue focus color */
+    -fx-border-width: 1.5px;
+}
+
+/* Buttons on Login Page */
+.login-button, .register-button {
+    -fx-pref-height: 40px;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-background-radius: 5px;
+    -fx-cursor: hand;
+}
+
+.login-button {
+    -fx-background-color: #4A90E2; /* Blue */
+}
+.login-button:hover {
+    -fx-background-color: #357ABD;
+}
+
+.register-button {
+    -fx-background-color: #7ED321; /* Green */
+}
+.register-button:hover {
+    -fx-background-color: #68B317;
+}
+
+/* Hyperlink */
+.forgot-password-link {
+    -fx-font-size: 13px;
+    -fx-text-fill: #555555;
+    -fx-border-color: transparent;
+}
+.forgot-password-link:hover {
+    -fx-underline: true;
+}
+
+/* "OR" Separator */
+.or-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #666666;
+}
+/* --- DASHBOARD STYLES --- */
+
+/* Navigation Panel (now much narrower) */
+.nav-panel {
+    -fx-padding: 20px 10px; /* Less horizontal padding */
+    -fx-pref-width: 80px;   /* Set a fixed narrow width */
+    -fx-alignment: top-center;
+}
+
+/* NEW Style for Icon-Only Navigation Buttons */
+.nav-button-icon-only {
+    -fx-pref-width: 50px;
+    -fx-pref-height: 50px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 10px;
+    -fx-cursor: hand;
+}
+
+.nav-button-icon-only .glyph-icon {
+    -fx-fill: #555555;
+}
+
+.nav-button-icon-only:hover {
+    -fx-background-color: #E8F0F2;
+}
+
+.nav-button-icon-only:hover .glyph-icon {
+    -fx-fill: #007AFF;
+}
+
+/* Style for the currently selected icon button */
+.nav-button-icon-only.selected {
+    -fx-background-color: #007AFF;
+}
+
+.nav-button-icon-only.selected .glyph-icon {
+    -fx-fill: white;
+}
+
+
+/* General Content Area Styling (unchanged) */
+.page-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+    -fx-padding: 0 0 20 0;
+}
+
+/* --- DOCTOR DASHBOARD STYLES --- */
+.stat-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E0E0E0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 20px;
+    -fx-min-width: 150px;
+    -fx-alignment: center-left;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 10, 0, 0, 2);
+}
+
+/* Styles for TableView, Save Button etc. (unchanged) */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #E0E0E0;
+    -fx-border-radius: 5px;
+}
+.save-button {
+    -fx-background-color: #007AFF;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-pref-height: 40px;
+    -fx-cursor: hand;
+}
+.save-button:hover {
+    -fx-background-color: #0056b3;
+}
