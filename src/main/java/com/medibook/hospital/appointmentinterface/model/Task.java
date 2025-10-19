@@ -1,21 +1,22 @@
 // In: model/Task.java
 package com.medibook.hospital.appointmentinterface.model;
 
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
+import java.time.LocalDate;
 
 public class Task {
     private final StringProperty description;
-    private final StringProperty priority;
-    private final StringProperty dueDate;
+    private final ObjectProperty<LocalDate> dueDate;
+    private final StringProperty status;
 
-    public Task(String description, String priority, String dueDate) {
+    public Task(String description, LocalDate dueDate, String status) {
         this.description = new SimpleStringProperty(description);
-        this.priority = new SimpleStringProperty(priority);
-        this.dueDate = new SimpleStringProperty(dueDate);
+        this.dueDate = new SimpleObjectProperty<>(dueDate);
+        this.status = new SimpleStringProperty(status);
     }
 
+    // Property Getters for TableView
     public StringProperty descriptionProperty() { return description; }
-    public StringProperty priorityProperty() { return priority; }
-    public StringProperty dueDateProperty() { return dueDate; }
+    public ObjectProperty<LocalDate> dueDateProperty() { return dueDate; }
+    public StringProperty statusProperty() { return status; }
 }

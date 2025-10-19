@@ -1,6 +1,7 @@
 package com.medibook.hospital.appointmentinterface.patient;
 
 import com.medibook.hospital.appointmentinterface.model.Appointment; // Make sure this import is correct
+import com.medibook.hospital.appointmentinterface.patient.view.MyProfileView;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.application.Application;

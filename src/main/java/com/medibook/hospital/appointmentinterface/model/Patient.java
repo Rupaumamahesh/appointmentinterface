@@ -1,25 +1,35 @@
 // In: model/Patient.java
 package com.medibook.hospital.appointmentinterface.model;
 
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
+import java.time.LocalDate;
 
 public class Patient {
-    private final StringProperty name;
-    private final StringProperty dob;
+    private final IntegerProperty id;
+    private final StringProperty fullName;
+    private final ObjectProperty<LocalDate> dateOfBirth;
     private final StringProperty gender;
-    private final StringProperty lastVisit;
 
-    public Patient(String name, String dob, String gender, String lastVisit) {
-        this.name = new SimpleStringProperty(name);
-        this.dob = new SimpleStringProperty(dob);
+    public Patient(int id, String fullName, LocalDate dateOfBirth, String gender) {
+        this.id = new SimpleIntegerProperty(id);
+        this.fullName = new SimpleStringProperty(fullName);
+        this.dateOfBirth = new SimpleObjectProperty<>(dateOfBirth);
         this.gender = new SimpleStringProperty(gender);
-        this.lastVisit = new SimpleStringProperty(lastVisit);
     }
 
-    // JavaFX property methods
-    public StringProperty nameProperty() { return name; }
-    public StringProperty dobProperty() { return dob; }
+    // --- START: ADD/REPLACE THIS ENTIRE SECTION ---
+
+    // --- Standard Getters (for regular Java code) ---
+    public int getId() { return id.get(); }
+    public String getFullName() { return fullName.get(); }
+    public LocalDate getDateOfBirth() { return dateOfBirth.get(); }
+    public String getGender() { return gender.get(); }
+
+    // --- JavaFX Property Getters (for TableView) ---
+    public IntegerProperty idProperty() { return id; }
+    public StringProperty fullNameProperty() { return fullName; }
+    public ObjectProperty<LocalDate> dateOfBirthProperty() { return dateOfBirth; }
     public StringProperty genderProperty() { return gender; }
-    public StringProperty lastVisitProperty() { return lastVisit; }
+
+    // --- END: ADD/REPLACE THIS ENTIRE SECTION ---
 }

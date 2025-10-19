@@ -1,60 +1,51 @@
 // In: admin/view/MasterScheduleView.java
 package com.medibook.hospital.appointmentinterface.admin.view;
 
+import com.medibook.hospital.appointmentinterface.dao.AppointmentDAO;
 import com.medibook.hospital.appointmentinterface.model.Appointment;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.layout.*;
+import javafx.scene.layout.VBox;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 public class MasterScheduleView {
+
     public Node getView() {
         VBox view = new VBox(20);
-        view.setPadding(new Insets(25));
-
-        HBox header = new HBox(20);
-        header.setAlignment(Pos.CENTER_LEFT);
         Label title = new Label("Master Schedule");
         title.getStyleClass().add("page-title");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Button bookAppointmentBtn = new Button("Book New Appointment");
-        bookAppointmentBtn.getStyleClass().add("save-button");
-        header.getChildren().addAll(title, spacer, bookAppointmentBtn);
 
-        // A full master calendar is complex. A table is a great starting point.
+        // --- Create the Table ---
         TableView<Appointment> table = new TableView<>();
-        TableColumn<Appointment, String> dateCol = new TableColumn<>("Date");
-        dateCol.setCellValueFactory(cellData -> cellData.getValue().dateProperty());
-        TableColumn<Appointment, String> timeCol = new TableColumn<>("Time");
-        timeCol.setCellValueFactory(cellData -> cellData.getValue().timeProperty());
-        TableColumn<Appointment, String> patientCol = new TableColumn<>("Patient");
-        // We'll reuse doctorProperty for patient and statusProperty for doctor
-        patientCol.setCellValueFactory(cellData -> cellData.getValue().doctorProperty());
-        TableColumn<Appointment, String> doctorCol = new TableColumn<>("Doctor");
-        doctorCol.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
 
-        table.getColumns().addAll(dateCol, timeCol, patientCol, doctorCol);
-        table.setItems(getDummyAppointments());
+        // --- THIS IS THE FIX: Link columns to the correct properties in the Appointment model ---
+        TableColumn<Appointment, LocalDate> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData -> cellData.getValue().appointmentDateProperty());
+
+        TableColumn<Appointment, LocalTime> timeCol = new TableColumn<>("Time");
+        timeCol.setCellValueFactory(cellData -> cellData.getValue().appointmentTimeProperty());
+
+        TableColumn<Appointment, String> patientCol = new TableColumn<>("Patient");
+        patientCol.setCellValueFactory(cellData -> cellData.getValue().patientNameProperty());
+
+        TableColumn<Appointment, String> doctorCol = new TableColumn<>("Doctor");
+        doctorCol.setCellValueFactory(cellData -> cellData.getValue().doctorNameProperty());
+
+        TableColumn<Appointment, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+
+        table.getColumns().addAll(dateCol, timeCol, patientCol, doctorCol, statusCol);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        view.getChildren().addAll(header, table);
-        return view;
-    }
+        // --- Load ALL appointments using the new DAO method ---
+        AppointmentDAO appointmentDAO = new AppointmentDAO();
+        table.setItems(FXCollections.observableArrayList(appointmentDAO.getAllAppointments()));
 
-    private ObservableList<Appointment> getDummyAppointments() {
-        // Reusing the Appointment model.
-        // For this table, "doctor" field holds the patient, "status" field holds the doctor.
-        return FXCollections.observableArrayList(
-                new Appointment("Today", "09:00 AM", "John Doe", "Dr. Smith"),
-                new Appointment("Today", "09:30 AM", "Jane Smith", "Dr. Smith"),
-                new Appointment("Today", "10:00 AM", "Sam Wilson", "Dr. Jones")
-        );
+        view.getChildren().addAll(title, table);
+        return view;
     }
 }

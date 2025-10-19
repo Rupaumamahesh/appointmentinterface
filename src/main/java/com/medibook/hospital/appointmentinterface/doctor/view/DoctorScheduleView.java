@@ -1,51 +1,48 @@
 // In: doctor/view/DoctorScheduleView.java
 package com.medibook.hospital.appointmentinterface.doctor.view;
 
+import com.medibook.hospital.appointmentinterface.dao.AppointmentDAO;
 import com.medibook.hospital.appointmentinterface.model.Appointment;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.VBox;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 public class DoctorScheduleView {
-    public Node getView() {
+
+    public Node getView(int doctorId) {
         VBox view = new VBox(20);
-        view.setPadding(new Insets(25));
-
-        Label title = new Label("Full Schedule");
+        Label title = new Label("My Schedule");
         title.getStyleClass().add("page-title");
-        // Note: A full interactive calendar is an advanced component.
-        // A TableView is an excellent and practical V1.
 
+        // --- Create the Table ---
         TableView<Appointment> table = new TableView<>();
-        TableColumn<Appointment, String> timeCol = new TableColumn<>("Time");
-        timeCol.setCellValueFactory(cellData -> cellData.getValue().timeProperty());
+
+        // This view doesn't need the doctor's name, so we only show the patient
+        TableColumn<Appointment, LocalDate> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cellData -> cellData.getValue().appointmentDateProperty());
+
+        TableColumn<Appointment, LocalTime> timeCol = new TableColumn<>("Time");
+        timeCol.setCellValueFactory(cellData -> cellData.getValue().appointmentTimeProperty());
 
         TableColumn<Appointment, String> patientCol = new TableColumn<>("Patient");
-        patientCol.setCellValueFactory(cellData -> cellData.getValue().doctorProperty()); // Reusing for patient name
+        patientCol.setCellValueFactory(cellData -> cellData.getValue().patientNameProperty());
 
         TableColumn<Appointment, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
 
-        table.getColumns().addAll(timeCol, patientCol, statusCol);
-        table.setItems(getDummyAppointments());
+        table.getColumns().addAll(dateCol, timeCol, patientCol, statusCol);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        // --- Load Data Dynamically from the DAO ---
+        AppointmentDAO appointmentDAO = new AppointmentDAO();
+        table.setItems(FXCollections.observableArrayList(appointmentDAO.getAppointmentsForDoctor(doctorId)));
 
         view.getChildren().addAll(title, table);
         return view;
-    }
-
-    private ObservableList<Appointment> getDummyAppointments() {
-        return FXCollections.observableArrayList(
-                new Appointment("Today", "09:00 AM", "John Doe", "Confirmed"),
-                new Appointment("Today", "09:30 AM", "Jane Smith", "Confirmed"),
-                new Appointment("Today", "10:15 AM", "Peter Jones", "Checked In"),
-                new Appointment("Today", "11:00 AM", "Mary Williams", "Pending"),
-                new Appointment("Tomorrow", "01:30 PM", "David Brown", "Confirmed")
-        );
     }
 }

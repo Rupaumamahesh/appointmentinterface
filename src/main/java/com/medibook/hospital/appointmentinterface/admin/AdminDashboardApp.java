@@ -7,113 +7,101 @@ import com.medibook.hospital.appointmentinterface.admin.view.ManagePatientsView;
 import com.medibook.hospital.appointmentinterface.admin.view.MasterScheduleView;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
-import javafx.application.Application;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
-import javafx.scene.layout.*;
-import javafx.stage.Stage;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 
-public class AdminDashboardApp extends Application {
+public class AdminDashboardApp {
 
-    private BorderPane mainLayout;
-    private Button selectedNavButton;
+    private final BorderPane mainLayout;
+    private final AdminDashboardView dashboardView;
 
-    @Override
-    public void start(Stage primaryStage) {
-        primaryStage.setTitle("Admin Portal");
+    private Button activeButton;
+    private Button dashboardBtn;
+    private Button doctorsBtn;
+    private Button patientsBtn;
+    private Button scheduleBtn;
 
-        StackPane root = new StackPane();
-        root.getStyleClass().add("root-pane");
-
-        mainLayout = new BorderPane();
-        mainLayout.setPadding(new Insets(20));
-
-        VBox navPanel = createNavigationPanel();
-        navPanel.getStyleClass().add("card");
-        mainLayout.setLeft(navPanel);
-        BorderPane.setMargin(navPanel, new Insets(0, 20, 0, 0));
-
-        root.getChildren().add(mainLayout);
-
-        navigateTo("Dashboard");
-
-        Scene scene = new Scene(root, 1200, 800);
-        scene.getStylesheets().add(getClass().getResource("/com/medibook/hospital/appointmentinterface/styles.css").toExternalForm());
-        primaryStage.setScene(scene);
-        primaryStage.show();
+    public AdminDashboardApp(int adminId) {
+        this.mainLayout = new BorderPane();
+        this.dashboardView = new AdminDashboardView();
+        initializePortal();
     }
 
-    private VBox createNavigationPanel() {
-        VBox navPanel = new VBox(20);
-        navPanel.setPadding(new Insets(20));
-        navPanel.getStyleClass().add("nav-panel");
-        navPanel.setAlignment(Pos.TOP_CENTER);
+    private void initializePortal() {
+        mainLayout.getStyleClass().add("root-pane");
 
-        Button dashboardButton = createNavButton("Dashboard", FontAwesomeIcon.HOME);
-        Button doctorsButton = createNavButton("Manage Doctors", FontAwesomeIcon.USER_MD);
-        Button patientsButton = createNavButton("Manage Patients", FontAwesomeIcon.USERS);
-        Button scheduleButton = createNavButton("Master Schedule", FontAwesomeIcon.CALENDAR_PLUS_ALT);
-        Button logoutButton = createNavButton("Logout", FontAwesomeIcon.SIGN_OUT);
+        Node sideNav = createSideNavigationBar();
+        mainLayout.setLeft(sideNav);
 
-        dashboardButton.setOnAction(e -> { navigateTo("Dashboard"); setSelected(dashboardButton); });
-        doctorsButton.setOnAction(e -> { navigateTo("Manage Doctors"); setSelected(doctorsButton); });
-        patientsButton.setOnAction(e -> { navigateTo("Manage Patients"); setSelected(patientsButton); });
-        scheduleButton.setOnAction(e -> { navigateTo("Master Schedule"); setSelected(scheduleButton); });
-        logoutButton.setOnAction(e -> System.out.println("Logout Clicked!"));
+        showDashboard(); // Show the dashboard by default
+    }
 
-        VBox spacer = new VBox();
+    private void showDashboard() {
+        Runnable manageDoctorsAction = () -> switchView(new ManageDoctorsView().getView(), doctorsBtn);
+        Runnable managePatientsAction = () -> switchView(new ManagePatientsView().getView(), patientsBtn);
+        Runnable masterScheduleAction = () -> switchView(new MasterScheduleView().getView(), scheduleBtn);
+
+        Node dashboardNode = dashboardView.getView(manageDoctorsAction, managePatientsAction, masterScheduleAction);
+        dashboardView.loadDashboardData();
+        switchView(dashboardNode, dashboardBtn);
+    }
+
+    private Node createSideNavigationBar() {
+        VBox sideNav = new VBox();
+        sideNav.getStyleClass().add("side-navigation-bar");
+
+        VBox topNavButtons = new VBox(10);
+        dashboardBtn = createNavButton(FontAwesomeIcon.TACHOMETER);
+        doctorsBtn = createNavButton(FontAwesomeIcon.USER_MD);
+        patientsBtn = createNavButton(FontAwesomeIcon.USERS);
+        scheduleBtn = createNavButton(FontAwesomeIcon.CALENDAR);
+        topNavButtons.getChildren().addAll(dashboardBtn, doctorsBtn, patientsBtn, scheduleBtn);
+
+        dashboardBtn.setOnAction(e -> showDashboard());
+        doctorsBtn.setOnAction(e -> switchView(new ManageDoctorsView().getView(), doctorsBtn));
+        patientsBtn.setOnAction(e -> switchView(new ManagePatientsView().getView(), patientsBtn));
+        scheduleBtn.setOnAction(e -> switchView(new MasterScheduleView().getView(), scheduleBtn));
+
+        VBox bottomNavButtons = new VBox(10);
+        Button logoutBtn = createNavButton(FontAwesomeIcon.SIGN_OUT);
+        bottomNavButtons.getChildren().add(logoutBtn);
+        logoutBtn.setOnAction(e -> javafx.application.Platform.exit());
+
+        Pane spacer = new Pane();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        navPanel.getChildren().addAll(dashboardButton, doctorsButton, patientsButton, scheduleButton, spacer, logoutButton);
-        setSelected(dashboardButton);
-        return navPanel;
+        sideNav.getChildren().addAll(topNavButtons, spacer, bottomNavButtons);
+        return sideNav;
     }
 
-    private void navigateTo(String page) {
-        Node viewNode;
-        switch (page) {
-            case "Dashboard":
-                viewNode = new AdminDashboardView().getView();
-                break;
-            case "Manage Doctors":
-                viewNode = new ManageDoctorsView().getView();
-                break;
-            case "Manage Patients":
-                viewNode = new ManagePatientsView().getView();
-                break;
-            case "Master Schedule":
-                viewNode = new MasterScheduleView().getView();
-                break;
-            default:
-                viewNode = new Label("Page not found");
-                break;
-        }
-        viewNode.getStyleClass().add("card");
-        mainLayout.setCenter(viewNode);
-    }
-
-    private Button createNavButton(String tooltipText, FontAwesomeIcon iconName) {
+    private Button createNavButton(FontAwesomeIcon iconName) {
         FontAwesomeIconView icon = new FontAwesomeIconView(iconName);
-        icon.setSize("24");
+        icon.getStyleClass().add("glyph-icon");
         Button button = new Button();
         button.setGraphic(icon);
-        button.setTooltip(new Tooltip(tooltipText));
-        button.getStyleClass().add("nav-button-icon-only");
+        button.getStyleClass().add("nav-button");
         return button;
     }
 
-    private void setSelected(Button button) {
-        if (selectedNavButton != null) {
-            selectedNavButton.getStyleClass().remove("selected");
+    private void switchView(Node newView, Button clickedButton) {
+        newView.getStyleClass().add("content-pane");
+        mainLayout.setCenter(newView);
+        setActiveButton(clickedButton);
+    }
+
+    private void setActiveButton(Button button) {
+        if (activeButton != null) {
+            activeButton.getStyleClass().remove("nav-button-active");
         }
-        selectedNavButton = button;
-        if (selectedNavButton != null) {
-            selectedNavButton.getStyleClass().add("selected");
-        }
+        button.getStyleClass().add("nav-button-active");
+        activeButton = button;
+    }
+
+    public Node getPortalView() {
+        return mainLayout;
     }
 }

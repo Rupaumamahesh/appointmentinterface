@@ -15,7 +15,33 @@ public class Message {
         this.timestamp = new SimpleStringProperty(timestamp);
     }
 
-    public StringProperty fromProperty() { return from; }
-    public StringProperty subjectProperty() { return subject; }
-    public StringProperty timestampProperty() { return timestamp; }
+    // --- Property Getters (for JavaFX TableView) ---
+    // These return the entire "Property" object, which lets the table bind to the data.
+    public StringProperty fromProperty() {
+        return from;
+    }
+
+    public StringProperty subjectProperty() {
+        return subject;
+    }
+
+    public StringProperty timestampProperty() {
+        return timestamp;
+    }
+
+    // --- START: ADD THIS SECTION ---
+    // --- Standard Getters (for regular Java code) ---
+    // These return the actual String value inside the property.
+    public String getFrom() {
+        return from.get();
+    }
+
+    public String getSubject() {
+        return subject.get();
+    }
+
+    public String getTimestamp() {
+        return timestamp.get();
+    }
+    // --- END: ADD THIS SECTION ---
 }

@@ -1,65 +1,81 @@
 // In: admin/view/AdminDashboardView.java
 package com.medibook.hospital.appointmentinterface.admin.view;
 
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 public class AdminDashboardView {
-    public Node getView() {
-        VBox view = new VBox(30);
-        view.setPadding(new Insets(25));
+    private Label totalAppointmentsLabel;
+    private Label completedAppointmentsLabel;
+    private Label doctorsOnDutyLabel;
 
+    public Node getView(Runnable onManageDoctorsClick, Runnable onManagePatientsClick, Runnable onMasterScheduleClick) {
+        VBox view = new VBox(30);
         Label title = new Label("Administrative Dashboard");
         title.getStyleClass().add("page-title");
-
-        // --- KPIs for Today ---
-        HBox kpiBox = new HBox(20);
-        kpiBox.getChildren().addAll(
-                createStatCard("Total Appointments", "152"),
-                createStatCard("Completed", "110"),
-                createStatCard("No-shows", "8"),
-                createStatCard("Doctors on Duty", "14")
-        );
-
-        // --- Actionable Items ---
-        VBox alertsBox = new VBox(10);
-        Label alertsTitle = new Label("Actionable Items & Alerts");
-        alertsTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-        alertsBox.getChildren().addAll(
-                alertsTitle,
-                new Label("• 2 Pending Doctor Approvals"),
-                new Label("• 5 Unassigned Appointments for tomorrow")
-        );
-
-        // --- Quick Links ---
-        HBox quickLinksBox = new HBox(15);
-        Label quickLinksTitle = new Label("Quick Links");
-        quickLinksTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-        Button manageDoctorsBtn = new Button("Manage Doctors");
-        Button managePatientsBtn = new Button("Manage Patients");
-        Button scheduleBtn = new Button("Master Schedule");
-        manageDoctorsBtn.getStyleClass().add("save-button");
-        managePatientsBtn.getStyleClass().add("save-button");
-        scheduleBtn.getStyleClass().add("save-button");
-        quickLinksBox.getChildren().addAll(manageDoctorsBtn, managePatientsBtn, scheduleBtn);
-
-        view.getChildren().addAll(title, kpiBox, alertsBox, new VBox(10, quickLinksTitle, quickLinksBox));
+        HBox kpiBox = createKpiBox();
+        VBox alertsBox = createAlertsBox();
+        VBox quickLinksSection = createQuickLinksSection(onManageDoctorsClick, onManagePatientsClick, onMasterScheduleClick);
+        view.getChildren().addAll(title, kpiBox, alertsBox, quickLinksSection);
         return view;
     }
 
-    // Reusing the stat card method from the Doctor's dashboard
-    private VBox createStatCard(String title, String value) {
+    public void loadDashboardData() {
+        totalAppointmentsLabel.setText("152");
+        completedAppointmentsLabel.setText("110");
+        doctorsOnDutyLabel.setText("14");
+    }
+
+    private HBox createKpiBox() {
+        totalAppointmentsLabel = new Label("...");
+        completedAppointmentsLabel = new Label("...");
+        doctorsOnDutyLabel = new Label("...");
+        HBox kpiBox = new HBox(20);
+        kpiBox.getChildren().addAll(
+                createStatCard("Total Appointments Today", totalAppointmentsLabel),
+                createStatCard("Completed Today", completedAppointmentsLabel),
+                createStatCard("Doctors on Duty", doctorsOnDutyLabel)
+        );
+        return kpiBox;
+    }
+
+    private VBox createAlertsBox() {
+        VBox alertsBox = new VBox(10);
+        Label alertsTitle = new Label("Actionable Items & Alerts");
+        alertsTitle.getStyleClass().add("section-title");
+        Label alert1 = new Label("• 2 Pending Doctor Approvals");
+        Label alert2 = new Label("• 5 Unassigned Appointments for tomorrow");
+        alert1.getStyleClass().add("action-item-label");
+        alert2.getStyleClass().add("action-item-label");
+        alertsBox.getChildren().addAll(alertsTitle, alert1, alert2);
+        return alertsBox;
+    }
+
+    private VBox createQuickLinksSection(Runnable onManageDoctorsClick, Runnable onManagePatientsClick, Runnable onMasterScheduleClick) {
+        Label quickLinksTitle = new Label("Quick Links");
+        quickLinksTitle.getStyleClass().add("section-title");
+        Button manageDoctorsBtn = new Button("Manage Doctors");
+        Button managePatientsBtn = new Button("Manage Patients");
+        Button scheduleBtn = new Button("Master Schedule");
+        manageDoctorsBtn.getStyleClass().add("action-button");
+        managePatientsBtn.getStyleClass().add("action-button");
+        scheduleBtn.getStyleClass().add("action-button");
+        manageDoctorsBtn.setOnAction(e -> onManageDoctorsClick.run());
+        managePatientsBtn.setOnAction(e -> onManagePatientsClick.run());
+        scheduleBtn.setOnAction(e -> onMasterScheduleClick.run());
+        HBox quickLinksBox = new HBox(15, manageDoctorsBtn, managePatientsBtn, scheduleBtn);
+        return new VBox(10, quickLinksTitle, quickLinksBox);
+    }
+
+    private VBox createStatCard(String title, Label valueLabel) {
         VBox card = new VBox(5);
-        card.setPadding(new Insets(15));
         card.getStyleClass().add("stat-card");
-        Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        valueLabel.getStyleClass().add("stat-value-label");
         Label titleLabel = new Label(title);
-        titleLabel.setStyle("-fx-text-fill: #555;");
+        titleLabel.getStyleClass().add("stat-title-label");
         card.getChildren().addAll(valueLabel, titleLabel);
         return card;
     }

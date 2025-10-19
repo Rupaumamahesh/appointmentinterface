@@ -1,51 +1,58 @@
-// Create this new file: MyAppointmentsView.java
+// In: patient/MyAppointmentsView.java
 package com.medibook.hospital.appointmentinterface.patient;
 
+import com.medibook.hospital.appointmentinterface.dao.AppointmentDAO;
 import com.medibook.hospital.appointmentinterface.model.Appointment;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+
 public class MyAppointmentsView {
+
+    private TableView<Appointment> table;
+    private AppointmentDAO appointmentDAO;
+
     public Node getView() {
+        this.appointmentDAO = new AppointmentDAO();
+
         VBox view = new VBox(20);
-        view.setPadding(new Insets(20));
-        view.getStyleClass().add("content-area");
+        view.setPadding(new Insets(10));
 
         Label title = new Label("My Appointments");
         title.getStyleClass().add("page-title");
 
-        TableView<Appointment> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table = new TableView<>();
 
-        TableColumn<Appointment, String> dateCol = new TableColumn<>("Date");
-        dateCol.setCellValueFactory(cellData -> cellData.getValue().dateProperty());
+        TableColumn<Appointment, LocalDate> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("appointmentDate"));
 
-        TableColumn<Appointment, String> timeCol = new TableColumn<>("Time");
-        timeCol.setCellValueFactory(cellData -> cellData.getValue().timeProperty());
+        TableColumn<Appointment, LocalTime> timeCol = new TableColumn<>("Time");
+        timeCol.setCellValueFactory(new PropertyValueFactory<>("startTime"));
 
         TableColumn<Appointment, String> doctorCol = new TableColumn<>("Doctor");
-        doctorCol.setCellValueFactory(cellData -> cellData.getValue().doctorProperty());
+        doctorCol.setCellValueFactory(new PropertyValueFactory<>("doctorName"));
 
         TableColumn<Appointment, String> statusCol = new TableColumn<>("Status");
-        statusCol.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
         table.getColumns().addAll(dateCol, timeCol, doctorCol, statusCol);
-        table.setItems(getDummyAppointments());
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         view.getChildren().addAll(title, table);
         return view;
     }
 
-    private ObservableList<Appointment> getDummyAppointments() {
-        return FXCollections.observableArrayList(
-                new Appointment("2025-10-28", "10:00 AM", "Dr. Smith", "Confirmed"),
-                new Appointment("2025-11-15", "02:30 PM", "Dr. Jones", "Pending")
-        );
+    public void loadAppointments(int patientId) {
+        List<Appointment> appointments = appointmentDAO.getAppointmentsForPatient(patientId);
+        table.setItems(FXCollections.observableArrayList(appointments));
     }
 }
