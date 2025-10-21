@@ -23,6 +23,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+
 public class LoginApp extends Application {
 
     private Stage primaryStage;
@@ -207,9 +208,11 @@ public class LoginApp extends Application {
         }
     }
 
+    // In: auth/LoginApp.java
+
     private void handleRegistration() {
         String fullName = fullNameField.getText();
-        String email = emailField.getText();
+        String email = emailField.getText(); // This is used as the username
         String password = createPasswordField.getText();
 
         if (fullName.isEmpty() || email.isEmpty() || password.isEmpty()) {
@@ -218,15 +221,18 @@ public class LoginApp extends Application {
         }
 
         PatientDAO patientDAO = new PatientDAO();
-        boolean success = patientDAO.registerPatient(fullName, email, password);
 
-        if (success) {
-            showAlert("Registration Successful", "You can now log in with your email and password.");
-            fullNameField.clear();
-            emailField.clear();
-            createPasswordField.clear();
+        // --- THIS IS THE FIX ---
+        // The method now returns an int (the new user's ID or -1)
+        int newUserId = patientDAO.registerPatient(fullName, email, password);
+
+        // Check if the returned ID is valid (not -1)
+        if (newUserId != -1) {
+            showAlert("Registration Successful", "Welcome! Please complete your profile.");
+            // Automatically log in and redirect the new patient
+            showPatientDashboard(newUserId);
         } else {
-            showAlert("Registration Failed", "An account with this email may already exist, or a database error occurred.");
+            showAlert("Registration Failed", "An account with this email may already exist.");
         }
     }
 
@@ -243,16 +249,27 @@ public class LoginApp extends Application {
         primaryStage.setScene(scene);
         primaryStage.setTitle("Doctor Portal");
     }
-    private void showPatientDashboard(int patientId) {
-        PatientPortalMainView portalView = new PatientPortalMainView(patientId);
-        Node portalUINode = portalView.getPortalView();
-        portalView.loadInitialData();
+    private void showPatientDashboard(int userId) {
+        // --- Translate user_id to patient_id ---
+        PatientDAO patientDAO = new PatientDAO();
+        int patientId = patientDAO.getPatientIdByUserId(userId);
 
-        Scene scene = new Scene((Parent) portalUINode, 1280, 800);
-        scene.getStylesheets().add(getClass().getResource("/com/medibook/hospital/appointmentinterface/styles.css").toExternalForm());
+        if (patientId != -1) {
+            // Create an instance of the main patient portal shell
+            PatientPortalMainView portalView = new PatientPortalMainView(patientId);
 
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Patient Portal");
+            // Get the complete portal UI
+            Node portalUINode = portalView.getPortalView();
+
+            // Set the scene
+            Scene scene = new Scene((Parent) portalUINode, 1280, 800);
+            scene.getStylesheets().add(getClass().getResource("/com/medibook/hospital/appointmentinterface/styles.css").toExternalForm());
+
+            primaryStage.setScene(scene);
+            primaryStage.setTitle("Patient Portal");
+        } else {
+            showAlert("Login Error", "Could not find a patient profile associated with this user account.");
+        }
     }
 
     private void showAlert(String title, String message) {

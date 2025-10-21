@@ -88,4 +88,58 @@ public class DoctorDAO {
         }
         return -1; // Return an invalid ID if not found
     }
+    // In: dao/DoctorDAO.java
+
+// ... (your existing getDoctorById and getDoctorIdByUserId methods) ...
+
+    // --- ADD THIS NEW METHOD FOR DOCTOR SEARCH ---
+    /**
+     * Searches for doctors, optionally filtering by name and/or specialty.
+     * @param nameQuery The search term for the doctor's name (can be empty).
+     * @param specialtyQuery The specialty to filter by (can be "All" or empty).
+     * @return A List of Doctor objects matching the criteria.
+     */
+    public List<Doctor> searchDoctors(String nameQuery, String specialtyQuery) {
+        List<Doctor> doctors = new ArrayList<>();
+
+        // Start building the SQL query
+        StringBuilder sql = new StringBuilder("SELECT id, full_name, specialization, email, status FROM doctors WHERE status = 'Active'");
+
+        boolean hasNameQuery = nameQuery != null && !nameQuery.trim().isEmpty();
+        boolean hasSpecialtyQuery = specialtyQuery != null && !specialtyQuery.trim().isEmpty() && !specialtyQuery.equalsIgnoreCase("All");
+
+        if (hasNameQuery) {
+            sql.append(" AND full_name LIKE ?");
+        }
+        if (hasSpecialtyQuery) {
+            sql.append(" AND specialization = ?");
+        }
+        sql.append(" ORDER BY full_name");
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+
+            int paramIndex = 1;
+            if (hasNameQuery) {
+                pstmt.setString(paramIndex++, "%" + nameQuery + "%"); // Use LIKE for partial matches
+            }
+            if (hasSpecialtyQuery) {
+                pstmt.setString(paramIndex, specialtyQuery);
+            }
+
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                doctors.add(new Doctor(
+                        rs.getInt("id"),
+                        rs.getString("full_name"),
+                        rs.getString("specialization"),
+                        rs.getString("email"),
+                        rs.getString("status")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return doctors;
+    }
 }

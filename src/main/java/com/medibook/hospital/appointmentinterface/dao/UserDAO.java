@@ -36,4 +36,55 @@ public class UserDAO {
         // Login failed, return null
         return null;
     }
+    // --- ADD THIS NEW METHOD ---
+    // In: dao/UserDAO.java
+
+    /**
+     * Changes a user's password after verifying their current password.
+     * @param userId The ID of the user.
+     * @param currentPassword The current password provided by the user.
+     * @param newPassword The new password to set.
+     * @return true if the password was successfully changed, false otherwise.
+     */
+    public boolean changePassword(int userId, String currentPassword, String newPassword) {
+        // Step 1: Verify the current password is correct.
+        String verifySql = "SELECT password FROM users WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement verifyPstmt = conn.prepareStatement(verifySql)) {
+
+            verifyPstmt.setInt(1, userId);
+            ResultSet rs = verifyPstmt.executeQuery();
+
+            if (rs.next()) {
+                String dbPassword = rs.getString("password");
+                // In a real app with hashing, you'd use a bcrypt.check() method here.
+                // For now, we do a simple string comparison.
+                if (!dbPassword.equals(currentPassword)) {
+                    System.out.println("Password verification failed: Current password does not match.");
+                    return false; // Current password was incorrect
+                }
+            } else {
+                return false; // User not found
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        // Step 2: If verification passed, update to the new password.
+        String updateSql = "UPDATE users SET password = ? WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement updatePstmt = conn.prepareStatement(updateSql)) {
+
+            // In a real app, you would HASH the newPassword here before saving.
+            updatePstmt.setString(1, newPassword);
+            updatePstmt.setInt(2, userId);
+
+            return updatePstmt.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

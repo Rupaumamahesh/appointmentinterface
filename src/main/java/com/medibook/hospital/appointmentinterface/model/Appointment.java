@@ -17,16 +17,28 @@ public class Appointment {
         this.id = new SimpleIntegerProperty(id);
         this.appointmentDate = new SimpleObjectProperty<>(appointmentDate);
         this.appointmentTime = new SimpleObjectProperty<>(appointmentTime);
-        this.patientName = new SimpleStringProperty(patientName);
-        this.doctorName = new SimpleStringProperty(doctorName);
+        this.patientName = new SimpleStringProperty(patientName != null ? patientName : ""); // Handle null patient name
+        this.doctorName = new SimpleStringProperty(doctorName != null ? doctorName : "");   // Handle null doctor name
         this.status = new SimpleStringProperty(status);
     }
 
-    // --- JavaFX Property Getters (These are what the TableView uses) ---
+    // --- START: ADD/REPLACE THIS ENTIRE SECTION ---
+
+    // --- Standard Getters (for regular Java logic) ---
+    public int getId() { return id.get(); }
+    public LocalDate getAppointmentDate() { return appointmentDate.get(); }
+    public LocalTime getAppointmentTime() { return appointmentTime.get(); }
+    public String getPatientName() { return patientName.get(); }
+    public String getDoctorName() { return doctorName.get(); }
+    public String getStatus() { return status.get(); }
+
+    // --- JavaFX Property Getters (for TableView columns) ---
     public IntegerProperty idProperty() { return id; }
     public ObjectProperty<LocalDate> appointmentDateProperty() { return appointmentDate; }
     public ObjectProperty<LocalTime> appointmentTimeProperty() { return appointmentTime; }
     public StringProperty patientNameProperty() { return patientName; }
     public StringProperty doctorNameProperty() { return doctorName; }
     public StringProperty statusProperty() { return status; }
+
+    // --- END: ADD/REPLACE THIS ENTIRE SECTION ---
 }
