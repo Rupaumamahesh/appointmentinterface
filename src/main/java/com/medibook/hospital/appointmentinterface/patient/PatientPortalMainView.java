@@ -1,15 +1,11 @@
-// In: patient/PatientPortalMainView.java
 package com.medibook.hospital.appointmentinterface.patient;
 
+import com.medibook.hospital.appointmentinterface.dao.AppointmentDAO;
+import com.medibook.hospital.appointmentinterface.dao.DoctorDAO;
 import com.medibook.hospital.appointmentinterface.dao.PatientDAO;
 import com.medibook.hospital.appointmentinterface.model.Doctor;
 import com.medibook.hospital.appointmentinterface.model.Patient;
-import com.medibook.hospital.appointmentinterface.patient.view.MyAppointmentsView;
-import com.medibook.hospital.appointmentinterface.patient.view.MyProfileView;
-import com.medibook.hospital.appointmentinterface.patient.view.PatientDashboardView;
-import com.medibook.hospital.appointmentinterface.patient.view.DoctorSearchView;
-import com.medibook.hospital.appointmentinterface.patient.view.DoctorScheduleSelectionView;
-import com.medibook.hospital.appointmentinterface.patient.view.AppointmentConfirmationView;
+import com.medibook.hospital.appointmentinterface.patient.view.*;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.scene.Node;
@@ -22,7 +18,8 @@ import javafx.scene.layout.VBox;
 
 import java.util.function.Consumer;
 
-public class PatientPortalMainView {
+// STEP 1: Implement the new listener interface
+public class PatientPortalMainView implements AppointmentViewListener {
 
     private final BorderPane mainLayout;
     private final int loggedInPatientId;
@@ -48,76 +45,106 @@ public class PatientPortalMainView {
         showDashboard();
     }
 
-    // --- NAVIGATION METHODS ---
-
-    // In: PatientPortalMainView.java
-
-    // In: patient/PatientPortalMainView.java
+    // --- NAVIGATION AND VIEW LOGIC ---
 
     private void showDashboard() {
-        // --- Define the action for the "Book a New Appointment" button ---
         Runnable bookAppointmentAction = () -> {
-            // --- THIS IS THE NEW LOGIC ---
-            // 1. Check if the patient's profile is complete before proceeding.
             PatientDAO dao = new PatientDAO();
             if (dao.isProfileComplete(loggedInPatientId)) {
-                // 2. If profile is complete, proceed with the booking workflow.
-
-                // Define what happens when a doctor is selected from the search results
-                Consumer<Doctor> onDoctorSelected = doctor -> {
-                    DoctorScheduleSelectionView scheduleView = new DoctorScheduleSelectionView(doctor);
-
-                    // Declare a final array to hold the onSlotSelected consumer, allowing it to be used inside onGoBack
-                    final Consumer<DoctorScheduleSelectionView.AppointmentSelection>[] onSlotSelected = new Consumer[1];
-
-                    // Define the "Go Back" action for the confirmation page
-                    Runnable onGoBack = () -> switchView(scheduleView.getView(onSlotSelected[0]), null);
-
-                    // Define what happens when a time slot is selected from the schedule view
-                    onSlotSelected[0] = selection -> {
-                        Runnable onBookingConfirmed = () -> showMyAppointments();
-
-                        AppointmentConfirmationView confirmationView = new AppointmentConfirmationView(selection, loggedInPatientId);
-                        switchView(confirmationView.getView(onBookingConfirmed, onGoBack), null);
-                    };
-
-                    // Show the initial doctor schedule view
-                    switchView(scheduleView.getView(onSlotSelected[0]), null);
-                };
-
-                // Show the doctor search view
-                switchView(new DoctorSearchView().getView(onDoctorSelected), null);
-
+                // This is the flow for a BRAND NEW appointment
+                startNewBookingFlow();
             } else {
-                // 3. If profile is incomplete, show a warning and redirect to the profile page.
                 showAlert("Profile Incomplete", "Please complete your profile (Date of Birth and Phone Number) before booking an appointment.");
-                showMyProfile(); // Navigate the user to their profile
+                showMyProfile();
             }
-            // --- END OF NEW LOGIC ---
         };
 
-        // --- Define the actions for the other dashboard buttons ---
-        Runnable viewAppointmentsAction = () -> showMyAppointments();
-        Runnable viewProfileAction = ()-> showMyProfile();
+        Runnable viewAppointmentsAction = this::showMyAppointments;
+        Runnable viewProfileAction = this::showMyProfile;
 
-        // Create the dashboard view, passing in all the actions
         Node dashboardNode = new PatientDashboardView().getView(
                 loggedInPatient.getFullName(),
                 bookAppointmentAction,
                 viewAppointmentsAction,
                 viewProfileAction
         );
-
-        // Set the dashboard as the current view
         switchView(dashboardNode, dashboardBtn);
     }
+
     private void showMyAppointments() {
-        switchView(new MyAppointmentsView().getView(loggedInPatientId), appointmentsBtn);
+        // STEP 2: Pass 'this' as the listener when creating the view
+        MyAppointmentsView appointmentsView = new MyAppointmentsView(loggedInPatientId, this);
+        switchView(appointmentsView.getView(), appointmentsBtn);
     }
 
     private void showMyProfile() {
         switchView(new MyProfileView().getView(loggedInPatientId), profileBtn);
     }
+
+    /**
+     * This is the workflow for booking a completely new appointment, starting with doctor search.
+     */
+    private void startNewBookingFlow() {
+        Consumer<Doctor> onDoctorSelected = doctor -> {
+            DoctorScheduleSelectionView scheduleView = new DoctorScheduleSelectionView(doctor);
+            final Consumer<DoctorScheduleSelectionView.AppointmentSelection>[] onSlotSelected = new Consumer[1];
+            Runnable onGoBack = () -> switchView(scheduleView.getView(onSlotSelected[0]), null);
+
+            onSlotSelected[0] = selection -> {
+                Runnable onBookingConfirmed = this::showMyAppointments;
+                AppointmentConfirmationView confirmationView = new AppointmentConfirmationView(selection, loggedInPatientId);
+                switchView(confirmationView.getView(onBookingConfirmed, onGoBack), null);
+            };
+            switchView(scheduleView.getView(onSlotSelected[0]), null);
+        };
+        switchView(new DoctorSearchView().getView(onDoctorSelected), null);
+    }
+
+    /**
+     * STEP 3: Implement the listener method. This is called when "Reschedule" is clicked.
+     * It starts the booking flow but skips the doctor search.
+     */
+    @Override
+    public void onRescheduleRequested(int doctorId, int oldAppointmentId) {
+        DoctorDAO doctorDAO = new DoctorDAO();
+        Doctor doctor = doctorDAO.getDoctorById(doctorId);
+
+        if (doctor == null) {
+            showAlert("Error", "Could not find the requested doctor's details.");
+            return;
+        }
+
+        // --- Start the booking flow directly with the doctor's schedule ---
+        DoctorScheduleSelectionView scheduleView = new DoctorScheduleSelectionView(doctor);
+        final Consumer<DoctorScheduleSelectionView.AppointmentSelection>[] onSlotSelected = new Consumer[1];
+        Runnable onGoBack = () -> switchView(scheduleView.getView(onSlotSelected[0]), null);
+
+        onSlotSelected[0] = selection -> {
+            // --- This is the SPECIAL confirmation logic for rescheduling ---
+            Runnable onBookingConfirmed = () -> {
+                // The new appointment is created inside AppointmentConfirmationView.
+                // Now, we must cancel the old one.
+                AppointmentDAO appointmentDAO = new AppointmentDAO();
+                boolean success = appointmentDAO.cancelAppointment(oldAppointmentId);
+
+                if (success) {
+                    showAlert("Success", "Your appointment has been successfully rescheduled.");
+                } else {
+                    showAlert("Warning", "Your new appointment was booked, but we could not cancel the old one. Please contact support.");
+                }
+                // Refresh the appointments list to show the changes.
+                showMyAppointments();
+            };
+
+            AppointmentConfirmationView confirmationView = new AppointmentConfirmationView(selection, loggedInPatientId);
+            switchView(confirmationView.getView(onBookingConfirmed, onGoBack), null);
+        };
+
+        // Show the schedule selection view to begin the reschedule process
+        switchView(scheduleView.getView(onSlotSelected[0]), null);
+    }
+
+    // --- UI HELPER METHODS (No changes below this line) ---
 
     private Node createSideNavigationBar() {
         VBox sideNav = new VBox();
@@ -144,8 +171,6 @@ public class PatientPortalMainView {
         sideNav.getChildren().addAll(topNavButtons, spacer, bottomNavButtons);
         return sideNav;
     }
-
-    // --- HELPER METHODS ---
 
     private void switchView(Node newView, Button clickedButton) {
         newView.getStyleClass().add("content-pane");
