@@ -1,10 +1,7 @@
 package com.medibook.hospital.appointmentinterface.doctor.view;
 
-// --- STEP 1: ADD THE MISSING IMPORT STATEMENTS ---
 import com.medibook.hospital.appointmentinterface.dao.DoctorDAO;
 import com.medibook.hospital.appointmentinterface.model.Doctor;
-// --- END OF STEP 1 ---
-
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.scene.Node;
@@ -20,13 +17,12 @@ public class DoctorPortalMainView {
 
     private final BorderPane mainLayout;
     private final int loggedInDoctorId;
+    private final Doctor loggedInDoctor;
+
+    // This is the single instance of the dashboard we will create and reuse
     private final DoctorDashboardView dashboardView;
 
-    // --- STEP 2: DECLARE THE NEW FIELD FOR THE DOCTOR OBJECT ---
-    private final Doctor loggedInDoctor;
-    // --- END OF STEP 2 ---
-
-    // --- UI Components as Class Fields ---
+    // UI Components
     private Button activeButton;
     private Button dashboardBtn;
     private Button scheduleBtn;
@@ -39,50 +35,50 @@ public class DoctorPortalMainView {
 
     public DoctorPortalMainView(int doctorId) {
         this.loggedInDoctorId = doctorId;
-
-        // Fetch the full doctor object and store it in the new field
         DoctorDAO doctorDAO = new DoctorDAO();
         this.loggedInDoctor = doctorDAO.getDoctorById(doctorId);
 
-        // Handle case where doctor might not be found in the database
         if (this.loggedInDoctor == null) {
-            // This is a critical error, the portal cannot function without doctor data
             System.err.println("FATAL ERROR: Could not load doctor with ID: " + doctorId);
-            // In a real application, you'd show a proper error dialog and likely exit
             showAlertAndExit("Fatal Error", "Could not load doctor data. The application will now close.");
         }
 
         this.mainLayout = new BorderPane();
-        this.dashboardView = new DoctorDashboardView(); // Create a single instance
+        // --- Create the dashboard instance ONCE and store it in the field ---
+        this.dashboardView = new DoctorDashboardView();
         initializePortal();
     }
 
     private void initializePortal() {
         mainLayout.getStyleClass().add("root-pane");
-
-        // Create the navigation bar
         Node sideNav = createSideNavigationBar();
         mainLayout.setLeft(sideNav);
 
-        // Define the actions for the dashboard buttons
+        // --- Set the initial view to the dashboard using our new helper method ---
+        showDashboard();
+
+        // --- Load the initial data for the dashboard AFTER it has been shown ---
+        dashboardView.loadDashboardData(loggedInDoctorId);
+    }
+
+    /**
+     * NEW METHOD: This handles showing the dashboard.
+     * It reuses the existing dashboardView instance to preserve its state.
+     */
+    private void showDashboard() {
         Runnable scheduleAction = () -> switchView(new DoctorScheduleView().getView(loggedInDoctorId), scheduleBtn);
         Runnable patientSearchAction = () -> switchView(new PatientListView().getView(loggedInDoctorId), patientsBtn);
 
-        // Get the initial dashboard view and pass the actions to it
+        // Get the view Node from the single, stored dashboardView instance
         Node dashboardContent = dashboardView.getView(scheduleAction, patientSearchAction);
 
-        // Set the initial view
         switchView(dashboardContent, dashboardBtn);
-
-        // After the view is set, load its data.
-        dashboardView.loadDashboardData(loggedInDoctorId);
     }
 
     private Node createSideNavigationBar() {
         VBox sideNav = new VBox();
         sideNav.getStyleClass().add("side-navigation-bar");
 
-        // Top Buttons
         VBox topNavButtons = new VBox(10);
         dashboardBtn = createNavButton(FontAwesomeIcon.HOME);
         scheduleBtn = createNavButton(FontAwesomeIcon.CALENDAR);
@@ -92,29 +88,21 @@ public class DoctorPortalMainView {
         availabilityBtn = createNavButton(FontAwesomeIcon.CLOCK_ALT);
         topNavButtons.getChildren().addAll(dashboardBtn, scheduleBtn, patientsBtn, messagesBtn, tasksBtn, availabilityBtn);
 
-        // Actions for Top Buttons
-        dashboardBtn.setOnAction(e -> {
-            Runnable scheduleAction = () -> switchView(new DoctorScheduleView().getView(loggedInDoctorId), scheduleBtn);
-            Runnable patientSearchAction = () -> switchView(new PatientListView().getView(loggedInDoctorId), patientsBtn);
-            switchView(dashboardView.getView(scheduleAction, patientSearchAction), dashboardBtn);
-        });
+        // --- UPDATED BUTTON ACTIONS ---
+        // The dashboard button now calls the dedicated showDashboard method, ensuring the view is reused.
+        dashboardBtn.setOnAction(e -> showDashboard());
+
         scheduleBtn.setOnAction(e -> switchView(new DoctorScheduleView().getView(loggedInDoctorId), scheduleBtn));
         patientsBtn.setOnAction(e -> switchView(new PatientListView().getView(loggedInDoctorId), patientsBtn));
-
-        // --- STEP 3: THE CORRECTED LINE FOR THE MESSAGES BUTTON ---
         messagesBtn.setOnAction(e -> switchView(new SecureMessagingView(loggedInDoctor).getView(), messagesBtn));
-        // --- END OF STEP 3 ---
-
         tasksBtn.setOnAction(e -> switchView(new TasksView().getView(loggedInDoctorId), tasksBtn));
         availabilityBtn.setOnAction(e -> switchView(new AvailabilityView().getView(loggedInDoctorId), availabilityBtn));
 
-        // Bottom Buttons
         VBox bottomNavButtons = new VBox(10);
         settingsBtn = createNavButton(FontAwesomeIcon.GEAR);
         logoutBtn = createNavButton(FontAwesomeIcon.SIGN_OUT);
         bottomNavButtons.getChildren().addAll(settingsBtn, logoutBtn);
 
-        // Actions for Bottom Buttons
         settingsBtn.setOnAction(e -> switchView(new DoctorProfileView().getView(loggedInDoctorId), settingsBtn));
         logoutBtn.setOnAction(e -> handleLogout());
 
@@ -166,11 +154,8 @@ public class DoctorPortalMainView {
         return mainLayout;
     }
 
-    public void loadInitialData() {
-        if (dashboardView != null) {
-            dashboardView.loadDashboardData(loggedInDoctorId);
-        }
-    }
+    // This method is no longer needed, as loading is handled in initializePortal
+    // public void loadInitialData() { ... }
 
     private void showAlertAndExit(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
