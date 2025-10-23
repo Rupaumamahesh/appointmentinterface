@@ -1,29 +1,30 @@
-// In: dao/User.java
 package com.medibook.hospital.appointmentinterface.dao;
 
 public class User {
-
-    // 1. Fields to hold the user's data
     private final int id;
+    private final String username; // <<< NEW FIELD
     private final String role;
-    // You can add more fields here later, like fullName or username
 
     /**
-     * 2. Constructor: This method is called when you do "new User(...)"
-     * It takes the data and saves it to the fields.
-     * @param id The user's ID from the database.
-     * @param role The user's role (e.g., "Patient", "Doctor") from the database.
+     * UPDATED CONSTRUCTOR: Now accepts id, username, and role.
      */
-    public User(int id, String role) {
+    public User(int id, String username, String role) {
         this.id = id;
+        this.username = username; // <<< INITIALIZE THE NEW FIELD
         this.role = role;
     }
 
-    /**
-     * 3. Getters: These are public methods that let other classes read the data.
-     */
+    // --- Getters ---
+
     public int getId() {
         return id;
+    }
+
+    /**
+     * NEW GETTER for the username.
+     */
+    public String getUsername() {
+        return username;
     }
 
     public String getRole() {
