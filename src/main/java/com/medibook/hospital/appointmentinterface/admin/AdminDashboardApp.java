@@ -1,4 +1,3 @@
-// In: admin/AdminDashboardApp.java
 package com.medibook.hospital.appointmentinterface.admin;
 
 import com.medibook.hospital.appointmentinterface.admin.view.AdminDashboardView;
@@ -8,7 +7,9 @@ import com.medibook.hospital.appointmentinterface.admin.view.MasterScheduleView;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -33,11 +34,9 @@ public class AdminDashboardApp {
 
     private void initializePortal() {
         mainLayout.getStyleClass().add("root-pane");
-
         Node sideNav = createSideNavigationBar();
         mainLayout.setLeft(sideNav);
-
-        showDashboard(); // Show the dashboard by default
+        showDashboard();
     }
 
     private void showDashboard() {
@@ -69,13 +68,29 @@ public class AdminDashboardApp {
         VBox bottomNavButtons = new VBox(10);
         Button logoutBtn = createNavButton(FontAwesomeIcon.SIGN_OUT);
         bottomNavButtons.getChildren().add(logoutBtn);
-        logoutBtn.setOnAction(e -> javafx.application.Platform.exit());
+
+        // --- THIS IS THE FIX ---
+        // The button now calls the method that shows the confirmation dialog.
+        logoutBtn.setOnAction(e -> handleLogout());
+        // --- END OF FIX ---
 
         Pane spacer = new Pane();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
         sideNav.getChildren().addAll(topNavButtons, spacer, bottomNavButtons);
         return sideNav;
+    }
+
+    private void handleLogout() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to log out?", ButtonType.YES, ButtonType.NO);
+        alert.setTitle("Confirm Logout");
+        alert.setHeaderText(null);
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.YES) {
+                System.out.println("Logging out...");
+                javafx.application.Platform.exit();
+            }
+        });
     }
 
     private Button createNavButton(FontAwesomeIcon iconName) {

@@ -11,6 +11,7 @@ import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -18,7 +19,6 @@ import javafx.scene.layout.VBox;
 
 import java.util.function.Consumer;
 
-// STEP 1: Implement the new listener interface
 public class PatientPortalMainView implements AppointmentViewListener {
 
     private final BorderPane mainLayout;
@@ -45,13 +45,10 @@ public class PatientPortalMainView implements AppointmentViewListener {
         showDashboard();
     }
 
-    // --- NAVIGATION AND VIEW LOGIC ---
-
     private void showDashboard() {
         Runnable bookAppointmentAction = () -> {
             PatientDAO dao = new PatientDAO();
             if (dao.isProfileComplete(loggedInPatientId)) {
-                // This is the flow for a BRAND NEW appointment
                 startNewBookingFlow();
             } else {
                 showAlert("Profile Incomplete", "Please complete your profile (Date of Birth and Phone Number) before booking an appointment.");
@@ -72,7 +69,6 @@ public class PatientPortalMainView implements AppointmentViewListener {
     }
 
     private void showMyAppointments() {
-        // STEP 2: Pass 'this' as the listener when creating the view
         MyAppointmentsView appointmentsView = new MyAppointmentsView(loggedInPatientId, this);
         switchView(appointmentsView.getView(), appointmentsBtn);
     }
@@ -81,9 +77,6 @@ public class PatientPortalMainView implements AppointmentViewListener {
         switchView(new MyProfileView().getView(loggedInPatientId), profileBtn);
     }
 
-    /**
-     * This is the workflow for booking a completely new appointment, starting with doctor search.
-     */
     private void startNewBookingFlow() {
         Consumer<Doctor> onDoctorSelected = doctor -> {
             DoctorScheduleSelectionView scheduleView = new DoctorScheduleSelectionView(doctor);
@@ -100,10 +93,6 @@ public class PatientPortalMainView implements AppointmentViewListener {
         switchView(new DoctorSearchView().getView(onDoctorSelected), null);
     }
 
-    /**
-     * STEP 3: Implement the listener method. This is called when "Reschedule" is clicked.
-     * It starts the booking flow but skips the doctor search.
-     */
     @Override
     public void onRescheduleRequested(int doctorId, int oldAppointmentId) {
         DoctorDAO doctorDAO = new DoctorDAO();
@@ -114,37 +103,26 @@ public class PatientPortalMainView implements AppointmentViewListener {
             return;
         }
 
-        // --- Start the booking flow directly with the doctor's schedule ---
         DoctorScheduleSelectionView scheduleView = new DoctorScheduleSelectionView(doctor);
         final Consumer<DoctorScheduleSelectionView.AppointmentSelection>[] onSlotSelected = new Consumer[1];
         Runnable onGoBack = () -> switchView(scheduleView.getView(onSlotSelected[0]), null);
 
         onSlotSelected[0] = selection -> {
-            // --- This is the SPECIAL confirmation logic for rescheduling ---
             Runnable onBookingConfirmed = () -> {
-                // The new appointment is created inside AppointmentConfirmationView.
-                // Now, we must cancel the old one.
                 AppointmentDAO appointmentDAO = new AppointmentDAO();
                 boolean success = appointmentDAO.cancelAppointment(oldAppointmentId);
-
                 if (success) {
                     showAlert("Success", "Your appointment has been successfully rescheduled.");
                 } else {
                     showAlert("Warning", "Your new appointment was booked, but we could not cancel the old one. Please contact support.");
                 }
-                // Refresh the appointments list to show the changes.
                 showMyAppointments();
             };
-
             AppointmentConfirmationView confirmationView = new AppointmentConfirmationView(selection, loggedInPatientId);
             switchView(confirmationView.getView(onBookingConfirmed, onGoBack), null);
         };
-
-        // Show the schedule selection view to begin the reschedule process
         switchView(scheduleView.getView(onSlotSelected[0]), null);
     }
-
-    // --- UI HELPER METHODS (No changes below this line) ---
 
     private Node createSideNavigationBar() {
         VBox sideNav = new VBox();
@@ -163,7 +141,11 @@ public class PatientPortalMainView implements AppointmentViewListener {
         VBox bottomNavButtons = new VBox(10);
         Button logoutBtn = createNavButton(FontAwesomeIcon.SIGN_OUT);
         bottomNavButtons.getChildren().add(logoutBtn);
-        logoutBtn.setOnAction(e -> javafx.application.Platform.exit());
+
+        // --- THIS IS THE FIX ---
+        // The button now calls the method that shows the confirmation dialog.
+        logoutBtn.setOnAction(e -> handleLogout());
+        // --- END OF FIX ---
 
         Pane spacer = new Pane();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -207,5 +189,17 @@ public class PatientPortalMainView implements AppointmentViewListener {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void handleLogout() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to log out?", ButtonType.YES, ButtonType.NO);
+        alert.setTitle("Confirm Logout");
+        alert.setHeaderText(null);
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.YES) {
+                System.out.println("Logging out...");
+                javafx.application.Platform.exit();
+            }
+        });
     }
 }
