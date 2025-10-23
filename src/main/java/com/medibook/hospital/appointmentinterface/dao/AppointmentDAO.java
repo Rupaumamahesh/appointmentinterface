@@ -254,4 +254,20 @@ public class AppointmentDAO {
             return false;
         }
     }
+    public boolean updateAppointmentStatus(int appointmentId, String newStatus) {
+        String sql = "UPDATE appointments SET status = ? WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, newStatus);
+            pstmt.setInt(2, appointmentId);
+
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
