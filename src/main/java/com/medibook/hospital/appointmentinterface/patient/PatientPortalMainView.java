@@ -25,13 +25,21 @@ public class PatientPortalMainView implements AppointmentViewListener {
     private final int loggedInPatientId;
     private final Patient loggedInPatient;
 
+    // --- NEW FIELD to hold the logout action ---
+    private final Runnable logoutAction;
+
     private Button activeButton;
     private Button dashboardBtn;
     private Button appointmentsBtn;
     private Button profileBtn;
 
-    public PatientPortalMainView(int patientId) {
+    /**
+     * UPDATED CONSTRUCTOR: Now accepts a Runnable 'logoutAction' from the LoginApp.
+     */
+    public PatientPortalMainView(int patientId, Runnable logoutAction) {
         this.loggedInPatientId = patientId;
+        this.logoutAction = logoutAction; // Store the provided action
+
         PatientDAO patientDAO = new PatientDAO();
         this.loggedInPatient = patientDAO.getPatientById(patientId);
         this.mainLayout = new BorderPane();
@@ -142,10 +150,7 @@ public class PatientPortalMainView implements AppointmentViewListener {
         Button logoutBtn = createNavButton(FontAwesomeIcon.SIGN_OUT);
         bottomNavButtons.getChildren().add(logoutBtn);
 
-        // --- THIS IS THE FIX ---
-        // The button now calls the method that shows the confirmation dialog.
         logoutBtn.setOnAction(e -> handleLogout());
-        // --- END OF FIX ---
 
         Pane spacer = new Pane();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -153,6 +158,24 @@ public class PatientPortalMainView implements AppointmentViewListener {
         sideNav.getChildren().addAll(topNavButtons, spacer, bottomNavButtons);
         return sideNav;
     }
+
+    /**
+     * UPDATED LOGOUT LOGIC: Now calls the logoutAction to return to the login screen.
+     */
+    private void handleLogout() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to log out?", ButtonType.YES, ButtonType.NO);
+        alert.setTitle("Confirm Logout");
+        alert.setHeaderText(null);
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.YES) {
+                System.out.println("Logging out... Returning to login screen.");
+                // Execute the action provided by LoginApp
+                logoutAction.run();
+            }
+        });
+    }
+
+    // --- (NO CHANGES NEEDED FOR THE HELPER METHODS BELOW) ---
 
     private void switchView(Node newView, Button clickedButton) {
         newView.getStyleClass().add("content-pane");
@@ -189,17 +212,5 @@ public class PatientPortalMainView implements AppointmentViewListener {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    private void handleLogout() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to log out?", ButtonType.YES, ButtonType.NO);
-        alert.setTitle("Confirm Logout");
-        alert.setHeaderText(null);
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.YES) {
-                System.out.println("Logging out...");
-                javafx.application.Platform.exit();
-            }
-        });
     }
 }

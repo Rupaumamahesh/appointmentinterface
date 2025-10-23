@@ -33,11 +33,14 @@ public class LoginApp extends Application {
     private TextField emailField;
     private PasswordField createPasswordField;
 
+    // --- NEW: This is the callback action that portals will use to log out ---
+    private final Runnable logoutAction = this::showLoginScreen;
+
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
         primaryStage.setTitle("Welcome to MediBook");
-        showLoginScreen();
+        showLoginScreen(); // Start the application by showing the login screen
     }
 
     public void showLoginScreen() {
@@ -51,6 +54,88 @@ public class LoginApp extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
     }
+
+    private void handleLogin() {
+        UserDAO userDAO = new UserDAO();
+        User loggedInUser = userDAO.validateLogin(usernameField.getText(), passwordField.getText(), roleSelector.getValue());
+        if (loggedInUser != null) {
+            switch (loggedInUser.getRole()) {
+                case "Admin":
+                    showAdminDashboard(loggedInUser.getId());
+                    break;
+                case "Doctor":
+                    DoctorDAO doctorDAO = new DoctorDAO();
+                    int doctorId = doctorDAO.getDoctorIdByUserId(loggedInUser.getId());
+                    if (doctorId != -1) {
+                        showDoctorDashboard(doctorId);
+                    } else {
+                        showAlert("Login Error", "Could not find a doctor profile associated with this user account.");
+                    }
+                    break;
+                case "Patient":
+                    showPatientDashboard(loggedInUser.getId());
+                    break;
+            }
+        } else {
+            showAlert("Login Failed", "Invalid username, password, or role.");
+        }
+    }
+
+    private void handleRegistration() {
+        String fullName = fullNameField.getText();
+        String email = emailField.getText();
+        String password = createPasswordField.getText();
+        if (fullName.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            showAlert("Registration Failed", "Please fill in all fields.");
+            return;
+        }
+        PatientDAO patientDAO = new PatientDAO();
+        int newUserId = patientDAO.registerPatient(fullName, email, password);
+        if (newUserId != -1) {
+            showAlert("Registration Successful", "Welcome! Please complete your profile.");
+            showPatientDashboard(newUserId);
+        } else {
+            showAlert("Registration Failed", "An account with this email may already exist.");
+        }
+    }
+
+    private void showDoctorDashboard(int doctorId) {
+        // --- UPDATED: Pass the logoutAction to the constructor ---
+        DoctorPortalMainView portalView = new DoctorPortalMainView(doctorId, logoutAction);
+        Node portalUINode = portalView.getPortalView();
+        Scene scene = new Scene((Parent) portalUINode, 1280, 800);
+        scene.getStylesheets().add(getClass().getResource("/com/medibook/hospital/appointmentinterface/styles.css").toExternalForm());
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Doctor Portal");
+    }
+
+    private void showPatientDashboard(int userId) {
+        PatientDAO patientDAO = new PatientDAO();
+        int patientId = patientDAO.getPatientIdByUserId(userId);
+        if (patientId != -1) {
+            // --- UPDATED: Pass the logoutAction to the constructor ---
+            PatientPortalMainView portalView = new PatientPortalMainView(patientId, logoutAction);
+            Node portalUINode = portalView.getPortalView();
+            Scene scene = new Scene((Parent) portalUINode, 1280, 800);
+            scene.getStylesheets().add(getClass().getResource("/com/medibook/hospital/appointmentinterface/styles.css").toExternalForm());
+            primaryStage.setScene(scene);
+            primaryStage.setTitle("Patient Portal");
+        } else {
+            showAlert("Login Error", "Could not find a patient profile associated with this user account.");
+        }
+    }
+
+    private void showAdminDashboard(int adminId) {
+        // --- UPDATED: Pass the logoutAction to the constructor ---
+        AdminDashboardApp portal = new AdminDashboardApp(adminId, logoutAction);
+        Node portalUINode = portal.getPortalView();
+        Scene scene = new Scene((Parent) portalUINode, 1280, 800);
+        scene.getStylesheets().add(getClass().getResource("/com/medibook/hospital/appointmentinterface/styles.css").toExternalForm());
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Admin Portal");
+    }
+
+    // --- (NO CHANGES NEEDED FOR THE METHODS BELOW) ---
 
     private VBox createLoginScreenUI() {
         VBox mainContent = new VBox(20);
@@ -134,82 +219,6 @@ public class LoginApp extends Application {
         return stackPane;
     }
 
-    private void handleLogin() {
-        UserDAO userDAO = new UserDAO();
-        User loggedInUser = userDAO.validateLogin(usernameField.getText(), passwordField.getText(), roleSelector.getValue());
-        if (loggedInUser != null) {
-            switch (loggedInUser.getRole()) {
-                case "Admin":
-                    showAdminDashboard(loggedInUser.getId());
-                    break;
-                case "Doctor":
-                    DoctorDAO doctorDAO = new DoctorDAO();
-                    int doctorId = doctorDAO.getDoctorIdByUserId(loggedInUser.getId());
-                    if (doctorId != -1) {
-                        showDoctorDashboard(doctorId);
-                    } else {
-                        showAlert("Login Error", "Could not find a doctor profile associated with this user account.");
-                    }
-                    break;
-                case "Patient":
-                    showPatientDashboard(loggedInUser.getId());
-                    break;
-            }
-        } else {
-            showAlert("Login Failed", "Invalid username, password, or role.");
-        }
-    }
-
-    private void handleRegistration() {
-        String fullName = fullNameField.getText();
-        String email = emailField.getText();
-        String password = createPasswordField.getText();
-        if (fullName.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            showAlert("Registration Failed", "Please fill in all fields.");
-            return;
-        }
-        PatientDAO patientDAO = new PatientDAO();
-        int newUserId = patientDAO.registerPatient(fullName, email, password);
-        if (newUserId != -1) {
-            showAlert("Registration Successful", "Welcome! Please complete your profile.");
-            showPatientDashboard(newUserId);
-        } else {
-            showAlert("Registration Failed", "An account with this email may already exist.");
-        }
-    }
-
-    // --- THIS IS THE CORRECTED METHOD ---
-    private void showDoctorDashboard(int doctorId) {
-        // Create an instance of the main doctor portal shell.
-        // The constructor now handles all initialization and data loading.
-        DoctorPortalMainView portalView = new DoctorPortalMainView(doctorId);
-
-        // Get the complete portal UI Node
-        Node portalUINode = portalView.getPortalView();
-
-        // Set the scene
-        Scene scene = new Scene((Parent) portalUINode, 1280, 800);
-        scene.getStylesheets().add(getClass().getResource("/com/medibook/hospital/appointmentinterface/styles.css").toExternalForm());
-
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Doctor Portal");
-    }
-
-    private void showPatientDashboard(int userId) {
-        PatientDAO patientDAO = new PatientDAO();
-        int patientId = patientDAO.getPatientIdByUserId(userId);
-        if (patientId != -1) {
-            PatientPortalMainView portalView = new PatientPortalMainView(patientId);
-            Node portalUINode = portalView.getPortalView();
-            Scene scene = new Scene((Parent) portalUINode, 1280, 800);
-            scene.getStylesheets().add(getClass().getResource("/com/medibook/hospital/appointmentinterface/styles.css").toExternalForm());
-            primaryStage.setScene(scene);
-            primaryStage.setTitle("Patient Portal");
-        } else {
-            showAlert("Login Error", "Could not find a patient profile associated with this user account.");
-        }
-    }
-
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         if (title.contains("Successful")) {
@@ -219,15 +228,6 @@ public class LoginApp extends Application {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    private void showAdminDashboard(int adminId) {
-        AdminDashboardApp portal = new AdminDashboardApp(adminId);
-        Node portalUINode = portal.getPortalView();
-        Scene scene = new Scene((Parent) portalUINode, 1280, 800);
-        scene.getStylesheets().add(getClass().getResource("/com/medibook/hospital/appointmentinterface/styles.css").toExternalForm());
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Admin Portal");
     }
 
     public static void main(String[] args) {

@@ -18,9 +18,10 @@ public class DoctorPortalMainView {
     private final BorderPane mainLayout;
     private final int loggedInDoctorId;
     private final Doctor loggedInDoctor;
-
-    // This is the single instance of the dashboard we will create and reuse
     private final DoctorDashboardView dashboardView;
+
+    // --- NEW FIELD to hold the logout action ---
+    private final Runnable logoutAction;
 
     // UI Components
     private Button activeButton;
@@ -33,8 +34,13 @@ public class DoctorPortalMainView {
     private Button settingsBtn;
     private Button logoutBtn;
 
-    public DoctorPortalMainView(int doctorId) {
+    /**
+     * UPDATED CONSTRUCTOR: Now accepts a Runnable 'logoutAction' from the LoginApp.
+     */
+    public DoctorPortalMainView(int doctorId, Runnable logoutAction) {
         this.loggedInDoctorId = doctorId;
+        this.logoutAction = logoutAction; // Store the provided action
+
         DoctorDAO doctorDAO = new DoctorDAO();
         this.loggedInDoctor = doctorDAO.getDoctorById(doctorId);
 
@@ -44,7 +50,6 @@ public class DoctorPortalMainView {
         }
 
         this.mainLayout = new BorderPane();
-        // --- Create the dashboard instance ONCE and store it in the field ---
         this.dashboardView = new DoctorDashboardView();
         initializePortal();
     }
@@ -53,25 +58,14 @@ public class DoctorPortalMainView {
         mainLayout.getStyleClass().add("root-pane");
         Node sideNav = createSideNavigationBar();
         mainLayout.setLeft(sideNav);
-
-        // --- Set the initial view to the dashboard using our new helper method ---
         showDashboard();
-
-        // --- Load the initial data for the dashboard AFTER it has been shown ---
         dashboardView.loadDashboardData(loggedInDoctorId);
     }
 
-    /**
-     * NEW METHOD: This handles showing the dashboard.
-     * It reuses the existing dashboardView instance to preserve its state.
-     */
     private void showDashboard() {
         Runnable scheduleAction = () -> switchView(new DoctorScheduleView().getView(loggedInDoctorId), scheduleBtn);
         Runnable patientSearchAction = () -> switchView(new PatientListView().getView(loggedInDoctorId), patientsBtn);
-
-        // Get the view Node from the single, stored dashboardView instance
         Node dashboardContent = dashboardView.getView(scheduleAction, patientSearchAction);
-
         switchView(dashboardContent, dashboardBtn);
     }
 
@@ -88,10 +82,7 @@ public class DoctorPortalMainView {
         availabilityBtn = createNavButton(FontAwesomeIcon.CLOCK_ALT);
         topNavButtons.getChildren().addAll(dashboardBtn, scheduleBtn, patientsBtn, messagesBtn, tasksBtn, availabilityBtn);
 
-        // --- UPDATED BUTTON ACTIONS ---
-        // The dashboard button now calls the dedicated showDashboard method, ensuring the view is reused.
         dashboardBtn.setOnAction(e -> showDashboard());
-
         scheduleBtn.setOnAction(e -> switchView(new DoctorScheduleView().getView(loggedInDoctorId), scheduleBtn));
         patientsBtn.setOnAction(e -> switchView(new PatientListView().getView(loggedInDoctorId), patientsBtn));
         messagesBtn.setOnAction(e -> switchView(new SecureMessagingView(loggedInDoctor).getView(), messagesBtn));
@@ -102,7 +93,7 @@ public class DoctorPortalMainView {
         settingsBtn = createNavButton(FontAwesomeIcon.GEAR);
         logoutBtn = createNavButton(FontAwesomeIcon.SIGN_OUT);
         bottomNavButtons.getChildren().addAll(settingsBtn, logoutBtn);
-        // In DoctorPortalMainView.java
+
         settingsBtn.setOnAction(e -> switchView(new DoctorProfileView().getView(loggedInDoctor), settingsBtn));
         logoutBtn.setOnAction(e -> handleLogout());
 
@@ -112,6 +103,24 @@ public class DoctorPortalMainView {
         sideNav.getChildren().addAll(topNavButtons, spacer, bottomNavButtons);
         return sideNav;
     }
+
+    /**
+     * UPDATED LOGOUT LOGIC: Now calls the logoutAction to return to the login screen.
+     */
+    private void handleLogout() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to log out?", ButtonType.YES, ButtonType.NO);
+        alert.setTitle("Confirm Logout");
+        alert.setHeaderText(null);
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.YES) {
+                System.out.println("Logging out... Returning to login screen.");
+                // Execute the action provided by LoginApp
+                logoutAction.run();
+            }
+        });
+    }
+
+    // --- (NO CHANGES NEEDED FOR THE HELPER METHODS BELOW) ---
 
     private Button createNavButton(FontAwesomeIcon iconName) {
         FontAwesomeIconView icon = new FontAwesomeIconView(iconName);
@@ -138,24 +147,9 @@ public class DoctorPortalMainView {
         activeButton = button;
     }
 
-    private void handleLogout() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to log out?", ButtonType.YES, ButtonType.NO);
-        alert.setTitle("Confirm Logout");
-        alert.setHeaderText(null);
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.YES) {
-                System.out.println("Logging out...");
-                javafx.application.Platform.exit();
-            }
-        });
-    }
-
     public Node getPortalView() {
         return mainLayout;
     }
-
-    // This method is no longer needed, as loading is handled in initializePortal
-    // public void loadInitialData() { ... }
 
     private void showAlertAndExit(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
