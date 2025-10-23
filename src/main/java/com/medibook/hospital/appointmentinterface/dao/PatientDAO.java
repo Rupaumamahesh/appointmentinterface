@@ -175,4 +175,55 @@ public class PatientDAO {
         }
         return false; // Assume incomplete if there's an error or no patient found
     }
+    // In: dao/PatientDAO.java
+
+// ... (your existing getAllPatients() and other methods)
+
+    /**
+     * Updates an existing patient's details in the database.
+     * @param patient The Patient object with updated information.
+     * @return true if the update was successful, false otherwise.
+     */
+    public boolean updatePatient(Patient patient) {
+        String sql = "UPDATE patients SET full_name = ?, date_of_birth = ?, gender = ?, phone_number = ?, address = ? WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, patient.getFullName());
+            pstmt.setDate(2, java.sql.Date.valueOf(patient.getDateOfBirth()));
+            pstmt.setString(3, patient.getGender());
+            pstmt.setString(4, patient.getPhoneNumber());
+            pstmt.setString(5, patient.getAddress());
+            pstmt.setInt(6, patient.getId());
+
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Deletes a patient and their associated user login from the database.
+     * This relies on the ON DELETE CASCADE constraint on the 'patients' table.
+     * @param patientId The ID of the patient to delete.
+     * @return true if the deletion was successful, false otherwise.
+     */
+    public boolean deletePatient(int patientId) {
+        // IMPORTANT: We delete the USER record. The `ON DELETE CASCADE` in your database
+        // schema will automatically delete the corresponding `patients` record.
+        // This is the cleanest way to remove a user and all their related data.
+        String sql = "DELETE FROM users WHERE id = (SELECT user_id FROM patients WHERE id = ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, patientId);
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
