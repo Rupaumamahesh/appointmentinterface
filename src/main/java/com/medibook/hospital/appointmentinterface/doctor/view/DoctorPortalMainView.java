@@ -102,8 +102,8 @@ public class DoctorPortalMainView {
         settingsBtn = createNavButton(FontAwesomeIcon.GEAR);
         logoutBtn = createNavButton(FontAwesomeIcon.SIGN_OUT);
         bottomNavButtons.getChildren().addAll(settingsBtn, logoutBtn);
-
-        settingsBtn.setOnAction(e -> switchView(new DoctorProfileView().getView(loggedInDoctorId), settingsBtn));
+        // In DoctorPortalMainView.java
+        settingsBtn.setOnAction(e -> switchView(new DoctorProfileView().getView(loggedInDoctor), settingsBtn));
         logoutBtn.setOnAction(e -> handleLogout());
 
         Pane spacer = new Pane();
