@@ -1,22 +1,34 @@
-// In: model/Message.java
 package com.medibook.hospital.appointmentinterface.model;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
 public class Message {
+    // --- NEW FIELD ---
+    private final int id; // The unique ID for the message
+
+    // --- EXISTING FIELDS ---
     private final StringProperty from;
     private final StringProperty subject;
     private final StringProperty timestamp;
 
-    public Message(String from, String subject, String timestamp) {
+    /**
+     * CONSTRUCTOR - Updated to accept the message ID as the first argument.
+     */
+    public Message(int id, String from, String subject, String timestamp) {
+        this.id = id; // Initialize the new ID field
         this.from = new SimpleStringProperty(from);
         this.subject = new SimpleStringProperty(subject);
         this.timestamp = new SimpleStringProperty(timestamp);
     }
 
+    // --- NEW GETTER ---
+    // This is required for the "Read Message" feature.
+    public int getId() {
+        return this.id;
+    }
+
     // --- Property Getters (for JavaFX TableView) ---
-    // These return the entire "Property" object, which lets the table bind to the data.
     public StringProperty fromProperty() {
         return from;
     }
@@ -29,9 +41,7 @@ public class Message {
         return timestamp;
     }
 
-    // --- START: ADD THIS SECTION ---
     // --- Standard Getters (for regular Java code) ---
-    // These return the actual String value inside the property.
     public String getFrom() {
         return from.get();
     }
@@ -43,5 +53,4 @@ public class Message {
     public String getTimestamp() {
         return timestamp.get();
     }
-    // --- END: ADD THIS SECTION ---
 }

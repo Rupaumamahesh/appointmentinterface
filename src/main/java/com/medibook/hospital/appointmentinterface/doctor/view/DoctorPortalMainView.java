@@ -1,5 +1,9 @@
-// In: doctor/view/DoctorPortalMainView.java
 package com.medibook.hospital.appointmentinterface.doctor.view;
+
+// --- STEP 1: ADD THE MISSING IMPORT STATEMENTS ---
+import com.medibook.hospital.appointmentinterface.dao.DoctorDAO;
+import com.medibook.hospital.appointmentinterface.model.Doctor;
+// --- END OF STEP 1 ---
 
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
@@ -18,6 +22,10 @@ public class DoctorPortalMainView {
     private final int loggedInDoctorId;
     private final DoctorDashboardView dashboardView;
 
+    // --- STEP 2: DECLARE THE NEW FIELD FOR THE DOCTOR OBJECT ---
+    private final Doctor loggedInDoctor;
+    // --- END OF STEP 2 ---
+
     // --- UI Components as Class Fields ---
     private Button activeButton;
     private Button dashboardBtn;
@@ -31,6 +39,19 @@ public class DoctorPortalMainView {
 
     public DoctorPortalMainView(int doctorId) {
         this.loggedInDoctorId = doctorId;
+
+        // Fetch the full doctor object and store it in the new field
+        DoctorDAO doctorDAO = new DoctorDAO();
+        this.loggedInDoctor = doctorDAO.getDoctorById(doctorId);
+
+        // Handle case where doctor might not be found in the database
+        if (this.loggedInDoctor == null) {
+            // This is a critical error, the portal cannot function without doctor data
+            System.err.println("FATAL ERROR: Could not load doctor with ID: " + doctorId);
+            // In a real application, you'd show a proper error dialog and likely exit
+            showAlertAndExit("Fatal Error", "Could not load doctor data. The application will now close.");
+        }
+
         this.mainLayout = new BorderPane();
         this.dashboardView = new DoctorDashboardView(); // Create a single instance
         initializePortal();
@@ -43,7 +64,7 @@ public class DoctorPortalMainView {
         Node sideNav = createSideNavigationBar();
         mainLayout.setLeft(sideNav);
 
-        // --- Define the actions for the dashboard buttons ---
+        // Define the actions for the dashboard buttons
         Runnable scheduleAction = () -> switchView(new DoctorScheduleView().getView(loggedInDoctorId), scheduleBtn);
         Runnable patientSearchAction = () -> switchView(new PatientListView().getView(loggedInDoctorId), patientsBtn);
 
@@ -53,17 +74,15 @@ public class DoctorPortalMainView {
         // Set the initial view
         switchView(dashboardContent, dashboardBtn);
 
-        // --- THIS IS THE MISSING STEP ---
         // After the view is set, load its data.
         dashboardView.loadDashboardData(loggedInDoctorId);
-        // --- END OF MISSING STEP ---
     }
 
     private Node createSideNavigationBar() {
         VBox sideNav = new VBox();
         sideNav.getStyleClass().add("side-navigation-bar");
 
-        // --- Top Buttons ---
+        // Top Buttons
         VBox topNavButtons = new VBox(10);
         dashboardBtn = createNavButton(FontAwesomeIcon.HOME);
         scheduleBtn = createNavButton(FontAwesomeIcon.CALENDAR);
@@ -73,26 +92,29 @@ public class DoctorPortalMainView {
         availabilityBtn = createNavButton(FontAwesomeIcon.CLOCK_ALT);
         topNavButtons.getChildren().addAll(dashboardBtn, scheduleBtn, patientsBtn, messagesBtn, tasksBtn, availabilityBtn);
 
-        // --- Actions for Top Buttons ---
+        // Actions for Top Buttons
         dashboardBtn.setOnAction(e -> {
-            // Re-create the actions to ensure they are fresh
             Runnable scheduleAction = () -> switchView(new DoctorScheduleView().getView(loggedInDoctorId), scheduleBtn);
             Runnable patientSearchAction = () -> switchView(new PatientListView().getView(loggedInDoctorId), patientsBtn);
             switchView(dashboardView.getView(scheduleAction, patientSearchAction), dashboardBtn);
         });
         scheduleBtn.setOnAction(e -> switchView(new DoctorScheduleView().getView(loggedInDoctorId), scheduleBtn));
         patientsBtn.setOnAction(e -> switchView(new PatientListView().getView(loggedInDoctorId), patientsBtn));
-        messagesBtn.setOnAction(e -> switchView(new SecureMessagingView().getView(loggedInDoctorId), messagesBtn));
+
+        // --- STEP 3: THE CORRECTED LINE FOR THE MESSAGES BUTTON ---
+        messagesBtn.setOnAction(e -> switchView(new SecureMessagingView(loggedInDoctor).getView(), messagesBtn));
+        // --- END OF STEP 3 ---
+
         tasksBtn.setOnAction(e -> switchView(new TasksView().getView(loggedInDoctorId), tasksBtn));
         availabilityBtn.setOnAction(e -> switchView(new AvailabilityView().getView(loggedInDoctorId), availabilityBtn));
 
-        // --- Bottom Buttons ---
+        // Bottom Buttons
         VBox bottomNavButtons = new VBox(10);
         settingsBtn = createNavButton(FontAwesomeIcon.GEAR);
         logoutBtn = createNavButton(FontAwesomeIcon.SIGN_OUT);
         bottomNavButtons.getChildren().addAll(settingsBtn, logoutBtn);
 
-        // --- Actions for Bottom Buttons ---
+        // Actions for Bottom Buttons
         settingsBtn.setOnAction(e -> switchView(new DoctorProfileView().getView(loggedInDoctorId), settingsBtn));
         logoutBtn.setOnAction(e -> handleLogout());
 
@@ -145,9 +167,17 @@ public class DoctorPortalMainView {
     }
 
     public void loadInitialData() {
-        // Load data for the default view (the dashboard)
         if (dashboardView != null) {
             dashboardView.loadDashboardData(loggedInDoctorId);
         }
+    }
+
+    private void showAlertAndExit(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+        javafx.application.Platform.exit();
     }
 }
